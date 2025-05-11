@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
+import ru.yandex.practicum.filmorate.validation.OnUpdate;
 
 import java.time.LocalDate;
 
@@ -11,6 +12,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = {"id"})
 public class Film {
+    @NotNull(groups = OnUpdate.class) // id обязателен при обновлении
     @PositiveOrZero
     private Integer id;
 
@@ -29,7 +31,6 @@ public class Film {
 
     @AssertTrue(message = "Дата релиза не может быть раньше 28 декабря 1895 года")
     private boolean isReleaseDateValid() {
-        return releaseDate == null
-                || !releaseDate.isBefore(LocalDate.of(1895, 12, 28));
+        return releaseDate == null || !releaseDate.isBefore(LocalDate.of(1895, 12, 28));
     }
 }
