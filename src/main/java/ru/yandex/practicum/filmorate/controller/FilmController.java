@@ -15,7 +15,7 @@ import java.util.Map;
 @RequestMapping("/films")
 @Slf4j
 public class FilmController {
-    private final Map<Integer, Film> films = new HashMap<>();
+    private final Map<Integer, Film> films = new HashMap<>(); // храним в мапе где ключ - id, а значение сам фильм
     private int filmIdCounter = 1;
 
     @GetMapping
