@@ -2,53 +2,81 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
+
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
 @Slf4j
 public class UserController {
-    private final Map<Integer, User> users = new HashMap<>();
-    private int userIdCounter = 1;
+    private final UserService userService;
+
+    @Autowired
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
 
     @GetMapping
     public ResponseEntity<Collection<User>> getAll() {
-        return ResponseEntity.ok(users.values());
+        return ResponseEntity.ok(userService.getAll());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<User> getById(@PathVariable int id) {
+        return ResponseEntity.ok(userService.getById(id));
     }
 
     @PostMapping
     public ResponseEntity<User> create(@Valid @RequestBody User user) {
-        user.setId(userIdCounter++);
-        // Проверка имени и установка логина, если имя пустое
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
-        users.put(user.getId(), user);
-        log.info("Добавлен пользователь: {}", user);
-        return ResponseEntity.ok(user);
+        User createdUser = userService.create(user);
+        log.info("Добавлен пользователь: {}", createdUser);
+        return ResponseEntity.ok(createdUser);
     }
 
     @PutMapping
     public ResponseEntity<User> update(@Validated(OnUpdate.class) @RequestBody User user) {
-        if (!users.containsKey(user.getId())) {
-            log.error("Пользователь с id {} не найден", user.getId());
-            throw new ValidationException("Пользователь не найден");
-        }
-        // Проверка имени и установка логина, если имя пустое
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
-        users.put(user.getId(), user);
-        log.info("Обновлён пользователь: {}", user);
-        return ResponseEntity.ok(user);
+
+        User updatedUser = userService.update(user);
+        log.info("Обновлён пользователь: {}", updatedUser);
+        return ResponseEntity.ok(updatedUser);
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")
+    public ResponseEntity<Void> addFriend(
+            @PathVariable int id,
+            @PathVariable int friendId) {
+        userService.addFriend(id, friendId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public ResponseEntity<Void> removeFriend(
+            @PathVariable int id,
+            @PathVariable int friendId) {
+        userService.removeFriend(id, friendId);
+        return ResponseEntity.noContent().build(); // 204 статус
+    }
+
+    @GetMapping("/{id}/friends")
+    public ResponseEntity<Collection<User>> getFriends(@PathVariable int id) {
+        return ResponseEntity.ok(userService.getFriends(id));
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    public ResponseEntity<Collection<User>> getCommonFriends(
+            @PathVariable int id,
+            @PathVariable int otherId) {
+        return ResponseEntity.ok(userService.getCommonFriends(id, otherId));
     }
 }
