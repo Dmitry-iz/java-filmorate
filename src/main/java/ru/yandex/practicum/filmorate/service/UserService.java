@@ -79,6 +79,13 @@ public class UserService {
         User user = userStorage.getById(userId);
         User otherUser = userStorage.getById(otherId);
 
+        if (user == null) {
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
+        }
+        if (otherUser == null) {
+            throw new NotFoundException("Пользователь с id = " + otherId + " не найден");
+        }
+
         Set<Integer> commonFriendIds = new HashSet<>(user.getFriends());
         commonFriendIds.retainAll(otherUser.getFriends());
 

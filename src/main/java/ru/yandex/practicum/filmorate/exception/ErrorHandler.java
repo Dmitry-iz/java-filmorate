@@ -36,6 +36,7 @@ public class ErrorHandler {
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> handleException(Exception ex) {
         log.error("Internal error: {}", ex.getMessage(), ex);
-        return ResponseEntity.internalServerError().body(new ErrorResponse("Внутренняя ошибка сервера"));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Внутренняя ошибка сервера"));
     }
 }

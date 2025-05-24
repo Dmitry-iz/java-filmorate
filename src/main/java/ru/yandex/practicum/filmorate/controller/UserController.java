@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
@@ -56,6 +57,12 @@ public class UserController {
     public ResponseEntity<Void> addFriend(
             @PathVariable int id,
             @PathVariable int friendId) {
+        if (userService.getById(id) == null) {
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+        if (userService.getById(friendId) == null) {
+            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
+        }
         userService.addFriend(id, friendId);
         return ResponseEntity.ok().build();
     }
@@ -64,8 +71,14 @@ public class UserController {
     public ResponseEntity<Void> removeFriend(
             @PathVariable int id,
             @PathVariable int friendId) {
+        if (userService.getById(id) == null) {
+            throw new NotFoundException("Пользователь с id = " + id + " не найден");
+        }
+        if (userService.getById(friendId) == null) {
+            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
+        }
         userService.removeFriend(id, friendId);
-        return ResponseEntity.noContent().build(); // 204 статус
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/friends")
