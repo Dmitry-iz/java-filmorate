@@ -5,6 +5,8 @@ import lombok.*;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Data
 @Builder
@@ -15,6 +17,11 @@ public class Film {
     @NotNull(groups = OnUpdate.class) // id обязателен при обновлении
     @PositiveOrZero
     private Integer id;
+    private final Set<Integer> likes = new HashSet<>();
+
+    public Set<Integer> getLikes() {
+        return likes;
+    }
 
     @NotBlank(message = "Название не может быть пустым")
     private String name;
