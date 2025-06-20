@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.storage;
 
-import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +12,6 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserDbStorage;
 
-
 import java.time.LocalDate;
 import java.util.List;
 
@@ -24,16 +22,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @JdbcTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({TestConfig.class, UserDbStorage.class})
-@RequiredArgsConstructor(onConstructor_ = @Autowired)
 class UserDbStorageTest {
-    private final UserDbStorage userStorage;
-    private final JdbcTemplate jdbcTemplate; // Добавляем внедрение JdbcTemplate
+    @Autowired
+    private UserDbStorage userStorage;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        // Очищаем базу перед каждым тестом
+        // Очищаем все таблицы перед тестом
         jdbcTemplate.update("DELETE FROM friendship");
         jdbcTemplate.update("DELETE FROM users");
 
@@ -71,7 +71,6 @@ class UserDbStorageTest {
 
     @Test
     void shouldGetAllUsers() {
-        // Создаем тестовых пользователей
         userStorage.create(testUser);
         User anotherUser = User.builder()
                 .email("another@example.com")

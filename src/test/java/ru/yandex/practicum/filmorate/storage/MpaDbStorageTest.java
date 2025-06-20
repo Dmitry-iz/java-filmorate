@@ -1,11 +1,13 @@
 package ru.yandex.practicum.filmorate.storage;
 
-import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
+import ru.yandex.practicum.filmorate.TestConfig;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaDbStorage;
 
@@ -16,11 +18,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @JdbcTest
-@AutoConfigureTestDatabase
-@Import(MpaDbStorage.class)
-@RequiredArgsConstructor(onConstructor_ = @Autowired)
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import({TestConfig.class, MpaDbStorage.class})
 class MpaDbStorageTest {
-    private final MpaDbStorage mpaStorage;
+    @Autowired
+    private MpaDbStorage mpaStorage;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setUp() {
+        // Очищаем таблицы, которые могут влиять на тесты
+        jdbcTemplate.update("DELETE FROM film_likes");
+        jdbcTemplate.update("DELETE FROM film_genres");
+        jdbcTemplate.update("DELETE FROM films");
+    }
 
     @Test
     void shouldGetMpaById() {
