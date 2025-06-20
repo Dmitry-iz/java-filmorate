@@ -61,8 +61,8 @@ public class FilmController {
     }
 
     @GetMapping
-    public List<Film> getAll() {
-        return filmService.getAllFilms();
+    public ResponseEntity<List<Film>> getAll() {
+        return ResponseEntity.ok(filmService.getAllFilms());
     }
 
     @PutMapping("/{id}/like/{userId}")

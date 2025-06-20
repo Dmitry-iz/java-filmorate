@@ -77,11 +77,12 @@ class UserControllerTest {
     void shouldGetAllUsers() {
         when(userService.getAll()).thenReturn(List.of(testUser));
 
-        ResponseEntity<Collection<User>> response = userController.getAll();
+        ResponseEntity<List<User>> response = userController.getAll();
+        List<User> users = response.getBody();
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertThat(response.getBody()).hasSize(1);
-        assertTrue(response.getBody().contains(testUser));
+        assertThat(users).hasSize(1);
+        assertTrue(users.contains(testUser));
         verify(userService, times(1)).getAll();
     }
 

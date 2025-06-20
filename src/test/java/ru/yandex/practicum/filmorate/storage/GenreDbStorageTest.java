@@ -20,11 +20,10 @@ import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @JdbcTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@AutoConfigureTestDatabase
 @Import({TestConfig.class, GenreDbStorage.class, FilmDbStorage.class})
 class GenreDbStorageTest {
     @Autowired
@@ -40,35 +39,31 @@ class GenreDbStorageTest {
 
     @BeforeEach
     void setUp() {
-        // Очищаем все таблицы перед тестом
-        jdbcTemplate.update("DELETE FROM film_likes");
-        jdbcTemplate.update("DELETE FROM film_genres");
-        jdbcTemplate.update("DELETE FROM films");
-
+        // Создаем тестовый фильм с жанрами
         Set<Genre> genres = new HashSet<>();
-        genres.add(Genre.builder().id(1).name("Комедия").build());
-        genres.add(Genre.builder().id(2).name("Драма").build());
+        genres.add(Genre.builder().id(1).build()); // Комедия
+        genres.add(Genre.builder().id(2).build()); // Драма
 
         testFilm = Film.builder()
                 .name("Test Film")
                 .description("Test Description")
                 .releaseDate(LocalDate.of(2000, 1, 1))
                 .duration(120)
-                .mpa(Mpa.builder().id(1).name("G").description("General Audiences").build())
+                .mpa(Mpa.builder().id(1).build()) // G
                 .genres(genres)
                 .build();
     }
 
     @Test
-    void shouldGetGenreById() {
+    void testGetGenreById() {
         Genre genre = genreStorage.getGenreById(1);
 
-        assertNotNull(genre);
+        assertEquals(1, genre.getId());
         assertEquals("Комедия", genre.getName());
     }
 
     @Test
-    void shouldGetAllGenres() {
+    void testGetAllGenres() {
         List<Genre> genres = genreStorage.getAllGenres();
 
         assertThat(genres).hasSize(6);
@@ -80,11 +75,13 @@ class GenreDbStorageTest {
     }
 
     @Test
-    void shouldGetGenresByFilmId() {
+    void testGetGenresByFilmId() {
         Film createdFilm = filmStorage.create(testFilm);
         List<Genre> genres = genreStorage.getGenresByFilmId(createdFilm.getId());
 
         assertThat(genres).hasSize(2);
+        assertThat(genres).extracting(Genre::getId)
+                .containsExactlyInAnyOrder(1, 2);
         assertThat(genres).extracting(Genre::getName)
                 .containsExactlyInAnyOrder("Комедия", "Драма");
     }

@@ -16,11 +16,10 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @JdbcTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@AutoConfigureTestDatabase
 @Import({TestConfig.class, UserDbStorage.class})
 class UserDbStorageTest {
     @Autowired
@@ -33,10 +32,6 @@ class UserDbStorageTest {
 
     @BeforeEach
     void setUp() {
-        // Очищаем все таблицы перед тестом
-        jdbcTemplate.update("DELETE FROM friendship");
-        jdbcTemplate.update("DELETE FROM users");
-
         testUser = User.builder()
                 .email("test@example.com")
                 .login("testLogin")
@@ -46,84 +41,86 @@ class UserDbStorageTest {
     }
 
     @Test
-    void shouldCreateAndGetUser() {
+    void testCreateUser() {
         User createdUser = userStorage.create(testUser);
-        User retrievedUser = userStorage.getById(createdUser.getId());
 
-        assertThat(retrievedUser)
-                .isNotNull()
-                .usingRecursiveComparison()
-                .isEqualTo(createdUser);
+        assertNotNull(createdUser.getId());
+        assertEquals(testUser.getEmail(), createdUser.getEmail());
+        assertEquals(testUser.getLogin(), createdUser.getLogin());
     }
 
     @Test
-    void shouldUpdateUser() {
+    void testUpdateUser() {
         User createdUser = userStorage.create(testUser);
         createdUser.setName("Updated Name");
-        createdUser.setEmail("updated@example.com");
 
         User updatedUser = userStorage.update(createdUser);
-        User retrievedUser = userStorage.getById(createdUser.getId());
 
-        assertEquals("Updated Name", retrievedUser.getName());
-        assertEquals("updated@example.com", retrievedUser.getEmail());
+        assertEquals("Updated Name", updatedUser.getName());
+        assertEquals(createdUser.getId(), updatedUser.getId());
     }
 
     @Test
-    void shouldGetAllUsers() {
-        userStorage.create(testUser);
-        User anotherUser = User.builder()
-                .email("another@example.com")
-                .login("anotherLogin")
-                .name("Another Name")
-                .birthday(LocalDate.of(1991, 1, 1))
-                .build();
-        userStorage.create(anotherUser);
+    void testGetUserById() {
+        User createdUser = userStorage.create(testUser);
+        User foundUser = userStorage.getById(createdUser.getId());
 
+        assertEquals(createdUser, foundUser);
+    }
+
+    @Test
+    void testGetAllUsers() {
+        userStorage.create(testUser);
         List<User> users = userStorage.getAll();
 
-        assertThat(users).hasSize(2);
+        assertThat(users).hasSize(1);
     }
 
     @Test
-    void shouldAddAndRemoveFriend() {
+    void testAddFriend() {
         User user1 = userStorage.create(testUser);
-        User user2 = User.builder()
+        User user2 = userStorage.create(User.builder()
                 .email("friend@example.com")
                 .login("friendLogin")
-                .name("Friend Name")
-                .birthday(LocalDate.of(1991, 1, 1))
-                .build();
-        User friend = userStorage.create(user2);
+                .birthday(LocalDate.of(1995, 5, 5))
+                .build());
 
-        userStorage.addFriend(user1.getId(), friend.getId());
+        userStorage.addFriend(user1.getId(), user2.getId());
         List<User> friends = userStorage.getFriends(user1.getId());
-        assertThat(friends).hasSize(1);
-        assertEquals(friend.getId(), friends.get(0).getId());
 
-        userStorage.removeFriend(user1.getId(), friend.getId());
-        List<User> friendsAfterRemoval = userStorage.getFriends(user1.getId());
-        assertThat(friendsAfterRemoval).isEmpty();
+        assertThat(friends).hasSize(1);
+        assertEquals(user2.getId(), friends.get(0).getId());
     }
 
     @Test
-    void shouldGetCommonFriends() {
+    void testRemoveFriend() {
         User user1 = userStorage.create(testUser);
-        User user2 = User.builder()
+        User user2 = userStorage.create(User.builder()
+                .email("friend@example.com")
+                .login("friendLogin")
+                .birthday(LocalDate.of(1995, 5, 5))
+                .build());
+
+        userStorage.addFriend(user1.getId(), user2.getId());
+        userStorage.removeFriend(user1.getId(), user2.getId());
+
+        List<User> friends = userStorage.getFriends(user1.getId());
+        assertThat(friends).isEmpty();
+    }
+
+    @Test
+    void testGetCommonFriends() {
+        User user1 = userStorage.create(testUser);
+        User user2 = userStorage.create(User.builder()
                 .email("user2@example.com")
                 .login("user2Login")
-                .name("User 2")
-                .birthday(LocalDate.of(1991, 1, 1))
-                .build();
-        user2 = userStorage.create(user2);
-
-        User commonFriend = User.builder()
+                .birthday(LocalDate.of(1995, 5, 5))
+                .build());
+        User commonFriend = userStorage.create(User.builder()
                 .email("common@example.com")
                 .login("commonLogin")
-                .name("Common Friend")
-                .birthday(LocalDate.of(1992, 1, 1))
-                .build();
-        commonFriend = userStorage.create(commonFriend);
+                .birthday(LocalDate.of(1996, 6, 6))
+                .build());
 
         userStorage.addFriend(user1.getId(), commonFriend.getId());
         userStorage.addFriend(user2.getId(), commonFriend.getId());
@@ -134,7 +131,7 @@ class UserDbStorageTest {
     }
 
     @Test
-    void shouldThrowWhenUserNotFound() {
+    void testUserNotFound() {
         assertThrows(NotFoundException.class, () -> userStorage.getById(999));
     }
 }

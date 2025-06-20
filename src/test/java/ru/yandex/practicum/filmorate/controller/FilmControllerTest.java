@@ -77,8 +77,10 @@ class FilmControllerTest {
     void shouldGetAllFilms() {
         when(filmService.getAllFilms()).thenReturn(List.of(testFilm));
 
-        List<Film> films = filmController.getAll();
+        ResponseEntity<List<Film>> response = filmController.getAll();
+        List<Film> films = response.getBody();
 
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         assertThat(films).hasSize(1);
         assertEquals(testFilm, films.get(0));
         verify(filmService, times(1)).getAllFilms();

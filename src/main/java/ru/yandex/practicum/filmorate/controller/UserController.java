@@ -12,7 +12,9 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -26,8 +28,8 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<Collection<User>> getAll() {
-        return ResponseEntity.ok(userService.getAll());
+    public ResponseEntity<List<User>> getAll() {
+        return ResponseEntity.ok(new ArrayList<>(userService.getAll()));
     }
 
     @GetMapping("/{id}")

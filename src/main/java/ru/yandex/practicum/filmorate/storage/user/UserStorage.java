@@ -34,6 +34,6 @@ public interface UserStorage {
             return true;
         } catch (NotFoundException e) {
             return false;
-       }
+        }
     }
 }
