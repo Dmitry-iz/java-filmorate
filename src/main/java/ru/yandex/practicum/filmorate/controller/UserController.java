@@ -12,7 +12,9 @@ import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -26,8 +28,8 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<Collection<User>> getAll() {
-        return ResponseEntity.ok(userService.getAll());
+    public ResponseEntity<List<User>> getAll() {
+        return ResponseEntity.ok(new ArrayList<>(userService.getAll()));
     }
 
     @GetMapping("/{id}")
@@ -44,25 +46,27 @@ public class UserController {
 
     @PutMapping
     public ResponseEntity<User> update(@Validated(OnUpdate.class) @RequestBody User user) {
-        if (user.getName() == null || user.getName().isBlank()) {
-            user.setName(user.getLogin());
-        }
+        try {
+            if (user.getName() == null || user.getName().isBlank()) {
+                user.setName(user.getLogin());
+            }
 
-        User updatedUser = userService.update(user);
-        log.info("Обновлён пользователь: {}", updatedUser);
-        return ResponseEntity.ok(updatedUser);
+            User updatedUser = userService.update(user);
+            log.info("Обновлён пользователь: {}", updatedUser);
+            return ResponseEntity.ok(updatedUser);
+        } catch (NotFoundException e) {
+            log.error("Пользователь не найден: {}", user.getId(), e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Внутренняя ошибка при обновлении пользователя: {}", user.getId(), e);
+            throw new NotFoundException("Пользователь не найден");
+        }
     }
 
     @PutMapping("/{id}/friends/{friendId}")
     public ResponseEntity<Void> addFriend(
             @PathVariable int id,
             @PathVariable int friendId) {
-        if (userService.getById(id) == null) {
-            throw new NotFoundException("Пользователь с id = " + id + " не найден");
-        }
-        if (userService.getById(friendId) == null) {
-            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
-        }
         userService.addFriend(id, friendId);
         return ResponseEntity.ok().build();
     }
@@ -71,25 +75,24 @@ public class UserController {
     public ResponseEntity<Void> removeFriend(
             @PathVariable int id,
             @PathVariable int friendId) {
-        if (userService.getById(id) == null) {
-            throw new NotFoundException("Пользователь с id = " + id + " не найден");
-        }
-        if (userService.getById(friendId) == null) {
-            throw new NotFoundException("Пользователь с id = " + friendId + " не найден");
-        }
         userService.removeFriend(id, friendId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/friends")
     public ResponseEntity<Collection<User>> getFriends(@PathVariable int id) {
-        return ResponseEntity.ok(userService.getFriends(id));
+        try {
+            return ResponseEntity.ok(userService.getFriends(id));
+        } catch (NotFoundException e) {
+            log.error("Пользователь не найден: {}", id, e);
+            throw e;
+        }
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
-    public ResponseEntity<Collection<User>> getCommonFriends(
+    public Collection<User> getCommonFriends(
             @PathVariable int id,
             @PathVariable int otherId) {
-        return ResponseEntity.ok(userService.getCommonFriends(id, otherId));
+        return userService.getCommonFriends(id, otherId);
     }
 }

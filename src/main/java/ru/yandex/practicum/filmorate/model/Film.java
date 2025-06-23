@@ -1,27 +1,18 @@
 package ru.yandex.practicum.filmorate.model;
 
 import jakarta.validation.constraints.*;
-import lombok.*;
+import lombok.Builder;
+import lombok.Data;
 import ru.yandex.practicum.filmorate.validation.OnUpdate;
 
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode(exclude = {"id"})
 public class Film {
-    @NotNull(groups = OnUpdate.class) // id обязателен при обновлении
-    @PositiveOrZero
+    @NotNull(groups = OnUpdate.class)
     private Integer id;
-    private final Set<Integer> likes = new HashSet<>();
-
-    public Set<Integer> getLikes() {
-        return likes;
-    }
 
     @NotBlank(message = "Название не может быть пустым")
     private String name;
@@ -30,11 +21,19 @@ public class Film {
     private String description;
 
     @NotNull(message = "Дата релиза обязательна")
-    @PastOrPresent(message = "Дата релиза не может быть раньше 28 декабря 1895 года")
     private LocalDate releaseDate;
 
     @Positive(message = "Продолжительность должна быть положительной")
     private int duration;
+
+    @NotNull(message = "Рейтинг MPA обязателен")
+    private Mpa mpa;
+
+    @Builder.Default
+    private Set<Genre> genres = new LinkedHashSet<>();
+
+    @Builder.Default
+    private Set<Integer> likes = new HashSet<>();
 
     @AssertTrue(message = "Дата релиза не может быть раньше 28 декабря 1895 года")
     private boolean isReleaseDateValid() {
