@@ -6,7 +6,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
@@ -28,26 +27,6 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film create(Film film) {
-
-        // Проверка наличия MPA
-        String checkMpaSql = "SELECT COUNT(*) FROM mpa_ratings WHERE id = ?";
-        Integer mpaCount = jdbcTemplate.queryForObject(checkMpaSql, Integer.class, film.getMpa().getId());
-        if (mpaCount == null || mpaCount == 0) {
-            throw new NotFoundException("MPA с id " + film.getMpa().getId() + " не найден");
-        }
-
-        // Проверка жанров
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            String checkGenreSql = "SELECT COUNT(*) FROM genres WHERE id = ?";
-            for (Genre genre : film.getGenres()) {
-                Integer genreCount = jdbcTemplate.queryForObject(checkGenreSql, Integer.class, genre.getId());
-                if (genreCount == null || genreCount == 0) {
-                    throw new NotFoundException("Жанр с id " + genre.getId() + " не найден");
-                }
-            }
-        }
-
-        // Создание фильма
         String sql = "INSERT INTO films (name, description, release_date, duration, mpa_id) VALUES (?, ?, ?, ?, ?)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -63,13 +42,12 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
 
-        // Сохранение жанров
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
+        if (!film.getGenres().isEmpty()) {
             String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-            List<Object[]> batchArgs = film.getGenres().stream()
-                    .map(genre -> new Object[]{film.getId(), genre.getId()})
-                    .toList();
-            jdbcTemplate.batchUpdate(genreSql, batchArgs);
+            jdbcTemplate.batchUpdate(genreSql,
+                    film.getGenres().stream()
+                            .map(g -> new Object[]{film.getId(), g.getId()})
+                            .collect(Collectors.toList()));
         }
 
         return getById(film.getId());
@@ -77,16 +55,8 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film update(Film film) {
-        // Проверка существования MPA
-        String checkMpaSql = "SELECT COUNT(*) FROM mpa_ratings WHERE id = ?";
-        Integer mpaCount = jdbcTemplate.queryForObject(checkMpaSql, Integer.class, film.getMpa().getId());
-        if (mpaCount == null || mpaCount == 0) {
-            throw new NotFoundException("MPA с id=" + film.getMpa().getId() + " не найден");
-        }
-
-        // Обновление основных данных фильма
         String sql = "UPDATE films SET name = ?, description = ?, release_date = ?, duration = ?, mpa_id = ? WHERE id = ?";
-        int updated = jdbcTemplate.update(sql,
+        jdbcTemplate.update(sql,
                 film.getName(),
                 film.getDescription(),
                 Date.valueOf(film.getReleaseDate()),
@@ -94,12 +64,15 @@ public class FilmDbStorage implements FilmStorage {
                 film.getMpa().getId(),
                 film.getId());
 
-        if (updated == 0) {
-            throw new NotFoundException("Фильм с id=" + film.getId() + " не найден");
-        }
+        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
 
-        // Обновление жанров
-        updateFilmGenres(film);
+        if (!film.getGenres().isEmpty()) {
+            String genreSql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
+            List<Object[]> batchArgs = film.getGenres().stream()
+                    .map(genre -> new Object[]{film.getId(), genre.getId()})
+                    .collect(Collectors.toList());
+            jdbcTemplate.batchUpdate(genreSql, batchArgs);
+        }
 
         return getById(film.getId());
     }
@@ -167,31 +140,6 @@ public class FilmDbStorage implements FilmStorage {
     private Set<Integer> getFilmLikes(int filmId) {
         String sql = "SELECT user_id FROM film_likes WHERE film_id = ?";
         return new HashSet<>(jdbcTemplate.queryForList(sql, Integer.class, filmId));
-    }
-
-    private void updateFilmGenres(Film film) {
-        // Удаляем старые жанры
-        jdbcTemplate.update("DELETE FROM film_genres WHERE film_id = ?", film.getId());
-        // Добавляем новые, если они есть
-
-        if (film.getGenres() != null && !film.getGenres().isEmpty()) {
-            // Удаляем дубликаты, сохраняя порядок первого вхождения
-            Set<Integer> addedGenres = new HashSet<>();
-            List<Genre> uniqueGenres = new ArrayList<>();
-
-            for (Genre genre : film.getGenres()) {
-                if (!addedGenres.contains(genre.getId())) {
-                    uniqueGenres.add(genre);
-                    addedGenres.add(genre.getId());
-                }
-            }
-
-            String sql = "INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)";
-            List<Object[]> batchArgs = uniqueGenres.stream()
-                    .map(genre -> new Object[]{film.getId(), genre.getId()})
-                    .collect(Collectors.toList());
-            jdbcTemplate.batchUpdate(sql, batchArgs);
-        }
     }
 
     @Override

@@ -9,6 +9,4 @@ public interface MpaStorage {
     List<Mpa> getAllMpa();
 
     Mpa getMpaById(int id);
-
-
 }

@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.storage.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -16,7 +15,6 @@ import java.sql.Date;
 import java.util.*;
 
 @Repository
-@Qualifier("userDbStorage")
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
 

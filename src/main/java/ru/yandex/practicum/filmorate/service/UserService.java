@@ -24,7 +24,6 @@ public class UserService {
     }
 
     public User update(User user) {
-        // Сначала проверяем существование пользователя
         User existingUser = userStorage.getById(user.getId());
         if (existingUser == null) {
             throw new NotFoundException("Пользователь с id " + user.getId() + " не найден");

@@ -1,12 +1,10 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
 
@@ -25,34 +23,14 @@ public class FilmController {
 
     @PostMapping
     public ResponseEntity<Film> create(@Valid @RequestBody Film film) {
-        try {
-            Film createdFilm = filmService.createFilm(film);
-            return ResponseEntity.ok(createdFilm);
-        } catch (NotFoundException e) {
-            log.error("Не найдено: {}", e.getMessage());
-            throw e;
-        } catch (ValidationException e) {
-            log.error("Ошибка валидации: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Внутренняя ошибка: {}", e.getMessage());
-            throw new ValidationException("Внутренняя ошибка сервера");
-        }
+        Film createdFilm = filmService.createFilm(film);
+        return ResponseEntity.ok(createdFilm);
     }
 
     @PutMapping
     public ResponseEntity<Film> update(@Valid @RequestBody Film film) {
-        log.info("PUT /films - обновление фильма: {}", film);
-        try {
-            Film updatedFilm = filmService.updateFilm(film);
-            return ResponseEntity.ok(updatedFilm);
-        } catch (NotFoundException e) {
-            log.error("Фильм не найден: {}", film.getId(), e);
-            throw e;
-        } catch (ValidationException e) {
-            log.error("Ошибка валидации: {}", e.getMessage(), e);
-            throw e;
-        }
+        Film updatedFilm = filmService.updateFilm(film);
+        return ResponseEntity.ok(updatedFilm);
     }
 
     @GetMapping("/{id}")
